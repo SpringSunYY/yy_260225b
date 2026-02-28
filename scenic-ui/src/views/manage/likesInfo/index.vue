@@ -10,12 +10,21 @@
         />
       </el-form-item>
       <el-form-item label="景区" prop="scenicId">
-        <el-input
+        <el-select
           v-model="queryParams.scenicId"
-          placeholder="请输入景区"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
+          filterable
+          remote
+          reserve-keyword
+          placeholder="请输入藏品名称"
+          :remote-method="remoteScenicList"
+          :loading="scenicLoading">
+          <el-option
+            v-for="item in scenicList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id">
+          </el-option>
+        </el-select>
       </el-form-item>
       <el-form-item label="创建时间">
         <el-date-picker
@@ -154,11 +163,20 @@
 
 <script>
 import {addLikesInfo, delLikesInfo, getLikesInfo, listLikesInfo, updateLikesInfo} from "@/api/manage/likesInfo";
+import {listScenicInfo} from "@/api/manage/scenicInfo";
 
 export default {
   name: "LikesInfo",
   data() {
     return {
+      //景区信息
+      scenicList: [],
+      scenicQuery: {
+        pageNum: 1,
+        pageSize: 30,
+        name: ''
+      },
+      scenicLoading: true,
       //表格展示列
       columns: [
         {key: 0, label: '编号', visible: true},
@@ -217,8 +235,21 @@ export default {
   },
   created() {
     this.getList();
+    this.getScenicList();
   },
   methods: {
+    /** 获取景区列表*/
+    getScenicList() {
+      this.scenicLoading = true;
+      listScenicInfo(this.scenicQuery).then(response => {
+        this.scenicList = response.rows;
+        this.scenicLoading = false;
+      });
+    },
+    remoteScenicList(queryString) {
+      this.scenicQuery.name = queryString;
+      this.getScenicList();
+    },
     /** 查询点赞信息列表 */
     getList() {
       this.loading = true;

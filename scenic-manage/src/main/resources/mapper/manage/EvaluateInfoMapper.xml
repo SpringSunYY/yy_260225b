@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lz.manage.mapper.EvaluateInfoMapper">
-    
+
     <resultMap type="EvaluateInfo" id="EvaluateInfoResult">
         <result property="id"    column="id"    />
         <result property="scenicId"    column="scenic_id"    />
@@ -24,16 +24,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectEvaluateInfoList" parameterType="EvaluateInfo" resultMap="EvaluateInfoResult">
         <include refid="selectEvaluateInfoVo"/>
-        <where>  
-            <if test="id != null "> and id = #{id}</if>
-            <if test="scenicId != null "> and scenic_id = #{scenicId}</if>
-            <if test="status != null  and status != ''"> and status = #{status}</if>
-            <if test="title != null  and title != ''"> and title like concat('%', #{title}, '%')</if>
-            <if test="userId != null "> and user_id = #{userId}</if>
-            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and DATE_FORMAT(create_time, '%Y-%m-%d') between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        <where>
+            <if test="id != null ">and id = #{id}</if>
+            <if test="scenicId != null ">and scenic_id = #{scenicId}</if>
+            <if test="status != null  and status != ''">and status = #{status}</if>
+            <if test="title != null  and title != ''">and title like concat('%', #{title}, '%')</if>
+            <if test="userId != null ">and user_id = #{userId}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''">
+                and DATE_FORMAT(create_time, '%Y-%m-%d') between #{params.beginCreateTime} and #{params.endCreateTime}
+            </if>
+            <!-- 数据范围过滤 -->
+            ${params.dataScope}
         </where>
+        order by create_time desc
     </select>
-    
+
     <select id="selectEvaluateInfoById" parameterType="Long" resultMap="EvaluateInfoResult">
         <include refid="selectEvaluateInfoVo"/>
         where id = #{id}
@@ -89,7 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteEvaluateInfoByIds" parameterType="String">
-        delete from tb_evaluate_info where id in 
+        delete from tb_evaluate_info where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

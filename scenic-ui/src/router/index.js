@@ -180,7 +180,7 @@ export const dynamicRoutes = [
     component: () => import('@/views/manage/scenicInfo/detail'),
     hidden: true,
     name: 'ScenicDetail',
-    permissions: ['manage:scenicInfo:list'],
+    permissions: ['manage:scenicInfo:list', 'manage:scenicInfo:query'],
   }
 ]
 

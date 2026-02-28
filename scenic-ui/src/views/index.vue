@@ -69,7 +69,8 @@ export default {
       // 分页参数
       queryParams: {
         pageNum: 1,
-        pageSize: 12
+        pageSize: 12,
+        status: '1'
       },
       // 总数据条数
       total: 0
@@ -115,7 +116,7 @@ export default {
       const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
       const clientHeight = document.documentElement.clientHeight || document.body.clientHeight;
-      
+
       // 当滚动到距离底部 100px 时触发加载
       if (scrollTop + clientHeight >= scrollHeight - 100) {
         this.loadMore();
@@ -126,7 +127,7 @@ export default {
       // 使用路由 resolve 获取 URL，然后在新标签页打开
       const route = this.$router.resolve({
         name: 'ScenicDetail',
-        query: { id: row.id }
+        query: {id: row.id}
       });
       window.open(route.href, '_blank');
     },

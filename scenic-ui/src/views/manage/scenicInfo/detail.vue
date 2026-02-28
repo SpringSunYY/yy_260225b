@@ -65,7 +65,7 @@
             <div v-else class="comment-item" v-for="comment in commentList" :key="comment.id">
               <div class="comment-header">
                 <span class="comment-user">{{ comment.userName || '匿名用户' }}</span>
-                <span class="comment-time">{{ parseTime(comment.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+                <span class="comment-time">{{ parseTime(comment.createTime, '{y}-{m}-{d}') }}</span>
               </div>
               <div class="comment-content">{{ comment.content }}</div>
               <div class="comment-score" v-if="comment.score">
@@ -197,19 +197,6 @@ export default {
         that.isLike = !that.isLike;
       }).catch(() => {
       });
-    },
-    /** 时间格式化 */
-    parseTime(time, pattern) {
-      if (!time) return '';
-      const date = new Date(time);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     },
     /** 获取评论列表 */
     getCommentList() {

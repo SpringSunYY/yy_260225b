@@ -44,7 +44,7 @@ public class ScenicInfoController extends BaseController
     /**
      * 查询景区信息列表
      */
-    @PreAuthorize("@ss.hasPermi('manage:scenicInfo:list')")
+    @PreAuthorize("@ss.hasAnyPermi('manage:scenicInfo:list,manage:scenicInfo:query')")
     @GetMapping("/list")
     public TableDataInfo list(ScenicInfoQuery scenicInfoQuery)
     {

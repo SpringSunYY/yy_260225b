@@ -10,12 +10,21 @@
         />
       </el-form-item>
       <el-form-item label="景区" prop="scenicId">
-        <el-input
+        <el-select
           v-model="queryParams.scenicId"
-          placeholder="请输入景区"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
+          filterable
+          remote
+          reserve-keyword
+          placeholder="请输入藏品名称"
+          :remote-method="remoteScenicList"
+          :loading="scenicLoading">
+          <el-option
+            v-for="item in scenicList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id">
+          </el-option>
+        </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
@@ -35,14 +44,14 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-<!--      <el-form-item label="创建人" prop="userId">-->
-<!--        <el-input-->
-<!--          v-model="queryParams.userId"-->
-<!--          placeholder="请输入创建人"-->
-<!--          clearable-->
-<!--          @keyup.enter.native="handleQuery"-->
-<!--        />-->
-<!--      </el-form-item>-->
+      <!--      <el-form-item label="创建人" prop="userId">-->
+      <!--        <el-input-->
+      <!--          v-model="queryParams.userId"-->
+      <!--          placeholder="请输入创建人"-->
+      <!--          clearable-->
+      <!--          @keyup.enter.native="handleQuery"-->
+      <!--        />-->
+      <!--      </el-form-item>-->
       <el-form-item label="创建时间">
         <el-date-picker
           v-model="daterangeCreateTime"
@@ -61,17 +70,17 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
-<!--      <el-col :span="1.5">-->
-<!--        <el-button-->
-<!--          type="primary"-->
-<!--          plain-->
-<!--          icon="el-icon-plus"-->
-<!--          size="mini"-->
-<!--          @click="handleAdd"-->
-<!--          v-hasPermi="['manage:evaluateInfo:add']"-->
-<!--        >新增-->
-<!--        </el-button>-->
-<!--      </el-col>-->
+      <!--      <el-col :span="1.5">-->
+      <!--        <el-button-->
+      <!--          type="primary"-->
+      <!--          plain-->
+      <!--          icon="el-icon-plus"-->
+      <!--          size="mini"-->
+      <!--          @click="handleAdd"-->
+      <!--          v-hasPermi="['manage:evaluateInfo:add']"-->
+      <!--        >新增-->
+      <!--        </el-button>-->
+      <!--      </el-col>-->
       <el-col :span="1.5">
         <el-button
           type="success"
@@ -175,9 +184,9 @@
     <!-- 添加或修改评价信息对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-<!--        <el-form-item label="景区" prop="scenicId">-->
-<!--          <el-input v-model="form.scenicId" placeholder="请输入景区"/>-->
-<!--        </el-form-item>-->
+        <!--        <el-form-item label="景区" prop="scenicId">-->
+        <!--          <el-input v-model="form.scenicId" placeholder="请输入景区"/>-->
+        <!--        </el-form-item>-->
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio
@@ -217,12 +226,21 @@ import {
   listEvaluateInfo,
   updateEvaluateInfo
 } from "@/api/manage/evaluateInfo";
+import {listScenicInfo} from "@/api/manage/scenicInfo";
 
 export default {
   name: "EvaluateInfo",
   dicts: ['manage_common_status'],
   data() {
     return {
+      //景区信息
+      scenicList: [],
+      scenicQuery: {
+        pageNum: 1,
+        pageSize: 30,
+        name: ''
+      },
+      scenicLoading: true,
       //表格展示列
       columns: [
         {key: 0, label: '编号', visible: true},
@@ -297,8 +315,21 @@ export default {
   },
   created() {
     this.getList();
+    this.getScenicList();
   },
   methods: {
+    /** 获取景区列表*/
+    getScenicList() {
+      this.scenicLoading = true;
+      listScenicInfo(this.scenicQuery).then(response => {
+        this.scenicList = response.rows;
+        this.scenicLoading = false;
+      });
+    },
+    remoteScenicList(queryString) {
+      this.scenicQuery.name = queryString;
+      this.getScenicList();
+    },
     /** 查询评价信息列表 */
     getList() {
       this.loading = true;

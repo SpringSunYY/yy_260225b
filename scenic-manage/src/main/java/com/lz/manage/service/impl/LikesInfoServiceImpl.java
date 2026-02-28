@@ -3,6 +3,7 @@ package com.lz.manage.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lz.common.annotation.DataScope;
 import com.lz.common.core.domain.entity.SysUser;
 import com.lz.common.utils.DateUtils;
 import com.lz.common.utils.SecurityUtils;
@@ -58,6 +59,7 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @param likesInfo 点赞信息
      * @return 点赞信息
      */
+    @DataScope(deptAlias = "tb_likes_info", userAlias = "tb_likes_info")
     @Override
     public List<LikesInfo> selectLikesInfoList(LikesInfo likesInfo) {
         List<LikesInfo> likesInfos = likesInfoMapper.selectLikesInfoList(likesInfo);
