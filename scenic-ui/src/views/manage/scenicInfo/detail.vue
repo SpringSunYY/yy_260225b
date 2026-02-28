@@ -1,65 +1,68 @@
 <template>
   <div class="detail-container" v-loading="loading">
     <!-- 详情内容 -->
-      <div class="detail-content" v-if="scenicInfo">
-        <!-- 头部图片 -->
-        <div class="detail-header">
-          <image-preview :src="scenicInfo.image" :width="'100%'" :height="800"/>
-        </div>
-
-        <!-- 基本信息 -->
-        <div class="detail-info">
-          <div class="info-header">
-            <h1 class="scenic-name">{{ scenicInfo.name }}</h1>
-            <div class="action-buttons">
-              <el-button
-                :type="isLike ? 'danger' : 'default'"
-                :icon="isLike ? 'el-icon-star-on' : 'el-icon-star-off'"
-                round
-                @click="handleLike"
-              >
-                {{ isLike ? '已点赞' : '点赞' }}
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 统计数据 -->
-          <div class="stats-row">
-            <div class="stat-item">
-              <i class="el-icon-view"></i>
-              <span>浏览 {{ scenicInfo.looksNumber || 0 }}</span>
-            </div>
-            <div class="stat-item">
-              <i class="el-icon-star-on"></i>
-              <span>点赞 {{ scenicInfo.likesNumber || 0 }}</span>
-            </div>
-            <div class="stat-item">
-              <i class="el-icon-chat-dot-round"></i>
-              <span>评论 {{ scenicInfo.commentsNumber || 0 }}</span>
-            </div>
-          </div>
-
-          <!-- 描述内容 -->
-          <div class="describe-section">
-            <h3>景区介绍</h3>
-            <div class="describe-content" v-html="scenicInfo.describe"></div>
-          </div>
-
-          <!-- 底部信息 -->
-          <div class="footer-info">
-            <span>创建时间：{{ parseTime(scenicInfo.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-            <span v-if="scenicInfo.updateTime">更新时间：{{ parseTime(scenicInfo.updateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-          </div>
-        </div>
+    <div class="detail-content" v-if="scenicInfo">
+      <!-- 头部图片 -->
+      <div class="detail-header">
+        <image-preview :src="scenicInfo.image" :width="'100%'" :height="800"/>
       </div>
 
-      <!-- 空状态 -->
-      <el-empty v-if="!loading && !scenicInfo" description="暂无数据"></el-empty>
+      <!-- 基本信息 -->
+      <div class="detail-info">
+        <div class="info-header">
+          <h1 class="scenic-name">{{ scenicInfo.name }}</h1>
+          <div class="action-buttons" v-hasPermi="['manage:likesInfo:add']">
+            <el-button
+              :type="isLike ? 'danger' : 'default'"
+              :icon="isLike ? 'el-icon-star-on' : 'el-icon-star-off'"
+              round
+              @click="handleLike"
+            >
+              {{ isLike ? '已点赞' : '点赞' }}
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 统计数据 -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <i class="el-icon-view"></i>
+            <span>浏览 {{ scenicInfo.looksNumber || 0 }}</span>
+          </div>
+          <div class="stat-item">
+            <i class="el-icon-star-on"></i>
+            <span>点赞 {{ scenicInfo.likesNumber || 0 }}</span>
+          </div>
+          <div class="stat-item">
+            <i class="el-icon-chat-dot-round"></i>
+            <span>评论 {{ scenicInfo.commentsNumber || 0 }}</span>
+          </div>
+        </div>
+
+        <!-- 描述内容 -->
+        <div class="describe-section">
+          <h3>景区介绍</h3>
+          <div class="describe-content" v-html="scenicInfo.describe"></div>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="footer-info">
+          <span>创建时间：{{ parseTime(scenicInfo.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-if="scenicInfo.updateTime">更新时间：{{
+              parseTime(scenicInfo.updateTime, '{y}-{m}-{d} {h}:{i}:{s}')
+            }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <el-empty v-if="!loading && !scenicInfo" description="暂无数据"></el-empty>
   </div>
 </template>
 
 <script>
 import {getScenicInfoDetail} from "@/api/manage/scenicInfo";
+import {addLikesInfo} from "@/api/manage/likesInfo";
 
 export default {
   name: "ScenicDetail",
@@ -96,11 +99,19 @@ export default {
     },
     /** 点赞/取消点赞 */
     handleLike() {
-      this.isLike = !this.isLike;
-      if (this.scenicInfo) {
-        this.scenicInfo.likesNumber = (this.scenicInfo.likesNumber || 0) + (this.isLike ? 1 : -1);
-      }
-      console.log('点赞状态:', this.isLike);
+      const that = this;
+      that.$modal.confirm('是否确认点赞').then(function () {
+        return addLikesInfo({
+          scenicId: that.scenicInfo.id,
+        });
+      }).then(() => {
+        that.$modal.msgSuccess("操作成功");
+        if (that.scenicInfo) {
+          that.scenicInfo.likesNumber = (Number(that.scenicInfo.likesNumber) || 0) + (that.isLike ? -1 : 1);
+        }
+        that.isLike = !that.isLike;
+      }).catch(() => {
+      });
     },
     /** 时间格式化 */
     parseTime(time, pattern) {
@@ -190,6 +201,7 @@ export default {
       border-radius: 8px;
       margin: 20px 0;
     }
+
     color: #606266;
     line-height: 1.8;
     font-size: 14px;

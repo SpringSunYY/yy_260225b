@@ -1,26 +1,25 @@
 package com.lz.manage.service.impl;
 
-import java.util.*;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-import javax.validation.Validator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.lz.common.utils.StringUtils;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.lz.common.utils.DateUtils;
-import javax.annotation.Resource;
-import org.springframework.stereotype.Service;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lz.common.core.domain.entity.SysUser;
+import com.lz.common.utils.DateUtils;
+import com.lz.common.utils.SecurityUtils;
+import com.lz.common.utils.StringUtils;
 import com.lz.manage.mapper.LikesInfoMapper;
 import com.lz.manage.model.domain.LikesInfo;
-import com.lz.manage.service.ILikesInfoService;
+import com.lz.manage.model.domain.ScenicInfo;
 import com.lz.manage.model.dto.likesInfo.LikesInfoQuery;
 import com.lz.manage.model.vo.likesInfo.LikesInfoVo;
+import com.lz.manage.service.ILikesInfoService;
+import com.lz.manage.service.IScenicInfoService;
+import com.lz.system.service.ISysUserService;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 点赞信息Service业务层处理
@@ -29,13 +28,19 @@ import com.lz.manage.model.vo.likesInfo.LikesInfoVo;
  * @date 2026-02-28
  */
 @Service
-public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo> implements ILikesInfoService
-{
+public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo> implements ILikesInfoService {
 
     @Resource
     private LikesInfoMapper likesInfoMapper;
 
+    @Resource
+    private IScenicInfoService scenicInfoService;
+
+    @Resource
+    private ISysUserService sysUserService;
+
     //region mybatis代码
+
     /**
      * 查询点赞信息
      *
@@ -43,8 +48,7 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @return 点赞信息
      */
     @Override
-    public LikesInfo selectLikesInfoById(Long id)
-    {
+    public LikesInfo selectLikesInfoById(Long id) {
         return likesInfoMapper.selectLikesInfoById(id);
     }
 
@@ -55,9 +59,19 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @return 点赞信息
      */
     @Override
-    public List<LikesInfo> selectLikesInfoList(LikesInfo likesInfo)
-    {
-        return likesInfoMapper.selectLikesInfoList(likesInfo);
+    public List<LikesInfo> selectLikesInfoList(LikesInfo likesInfo) {
+        List<LikesInfo> likesInfos = likesInfoMapper.selectLikesInfoList(likesInfo);
+        for (LikesInfo info : likesInfos) {
+            SysUser sysUser = sysUserService.selectUserById(info.getUserId());
+            if (StringUtils.isNotNull(sysUser)) {
+                info.setUserName(sysUser.getUserName());
+            }
+            ScenicInfo scenicInfo = scenicInfoService.selectScenicInfoById(info.getScenicId());
+            if (StringUtils.isNotNull(scenicInfo)) {
+                info.setScenicName(scenicInfo.getName());
+            }
+        }
+        return likesInfos;
     }
 
     /**
@@ -67,10 +81,32 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @return 结果
      */
     @Override
-    public int insertLikesInfo(LikesInfo likesInfo)
-    {
-        likesInfo.setCreateTime(DateUtils.getNowDate());
-        return likesInfoMapper.insertLikesInfo(likesInfo);
+    public int insertLikesInfo(LikesInfo likesInfo) {
+        //查询是否有景点
+        ScenicInfo scenicInfo = scenicInfoService.selectScenicInfoById(likesInfo.getScenicId());
+        if (StringUtils.isNull(scenicInfo)) {
+            return 1;
+        }
+        //首先查询是否有点赞
+        LambdaQueryWrapper<LikesInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(LikesInfo::getScenicId, likesInfo.getScenicId());
+        Long userId = SecurityUtils.getUserId();
+        queryWrapper.eq(LikesInfo::getUserId, userId);
+        List<LikesInfo> list = this.list(queryWrapper);
+        if (StringUtils.isNotEmpty(list)) {
+            //有点赞表示删除点赞
+            this.remove(queryWrapper);
+        } else {
+            likesInfo.setCreateTime(DateUtils.getNowDate());
+            likesInfo.setUpdateTime(DateUtils.getNowDate());
+            likesInfo.setUserId(userId);
+            likesInfoMapper.insertLikesInfo(likesInfo);
+        }
+        LambdaQueryWrapper<LikesInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(LikesInfo::getScenicId, likesInfo.getScenicId());
+        long count = this.count(wrapper);
+        scenicInfo.setLikesNumber(count);
+        return scenicInfoService.updateScenicInfo(scenicInfo);
     }
 
     /**
@@ -80,8 +116,7 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @return 结果
      */
     @Override
-    public int updateLikesInfo(LikesInfo likesInfo)
-    {
+    public int updateLikesInfo(LikesInfo likesInfo) {
         likesInfo.setUpdateTime(DateUtils.getNowDate());
         return likesInfoMapper.updateLikesInfo(likesInfo);
     }
@@ -93,8 +128,7 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @return 结果
      */
     @Override
-    public int deleteLikesInfoByIds(Long[] ids)
-    {
+    public int deleteLikesInfoByIds(Long[] ids) {
         return likesInfoMapper.deleteLikesInfoByIds(ids);
     }
 
@@ -105,13 +139,13 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
      * @return 结果
      */
     @Override
-    public int deleteLikesInfoById(Long id)
-    {
+    public int deleteLikesInfoById(Long id) {
         return likesInfoMapper.deleteLikesInfoById(id);
     }
+
     //endregion
     @Override
-    public QueryWrapper<LikesInfo> getQueryWrapper(LikesInfoQuery likesInfoQuery){
+    public QueryWrapper<LikesInfo> getQueryWrapper(LikesInfoQuery likesInfoQuery) {
         QueryWrapper<LikesInfo> queryWrapper = new QueryWrapper<>();
         //如果不使用params可以删除
         Map<String, Object> params = likesInfoQuery.getParams();
@@ -119,13 +153,13 @@ public class LikesInfoServiceImpl extends ServiceImpl<LikesInfoMapper, LikesInfo
             params = new HashMap<>();
         }
         Long id = likesInfoQuery.getId();
-        queryWrapper.eq( StringUtils.isNotNull(id),"id",id);
+        queryWrapper.eq(StringUtils.isNotNull(id), "id", id);
 
         Long scenicId = likesInfoQuery.getScenicId();
-        queryWrapper.eq( StringUtils.isNotNull(scenicId),"scenic_id",scenicId);
+        queryWrapper.eq(StringUtils.isNotNull(scenicId), "scenic_id", scenicId);
 
         Date createTime = likesInfoQuery.getCreateTime();
-        queryWrapper.between(StringUtils.isNotNull(params.get("beginCreateTime"))&&StringUtils.isNotNull(params.get("endCreateTime")),"create_time",params.get("beginCreateTime"),params.get("endCreateTime"));
+        queryWrapper.between(StringUtils.isNotNull(params.get("beginCreateTime")) && StringUtils.isNotNull(params.get("endCreateTime")), "create_time", params.get("beginCreateTime"), params.get("endCreateTime"));
 
         return queryWrapper;
     }
