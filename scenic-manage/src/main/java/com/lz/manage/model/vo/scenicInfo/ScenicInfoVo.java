@@ -1,14 +1,13 @@
 package com.lz.manage.model.vo.scenicInfo;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-import com.lz.common.annotation.Excel;
-import org.springframework.beans.BeanUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.lz.manage.model.domain.ScenicInfo;
+import lombok.Data;
+import org.springframework.beans.BeanUtils;
+
+import java.io.Serializable;
+import java.util.Date;
+
 /**
  * 景区信息Vo对象 tb_scenic_info
  *
@@ -16,56 +15,87 @@ import com.lz.manage.model.domain.ScenicInfo;
  * @date 2026-02-28
  */
 @Data
-public class ScenicInfoVo implements Serializable
-{
+public class ScenicInfoVo implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /** 编号 */
+    /**
+     * 编号
+     */
     private Long id;
 
-    /** 名称 */
+    /**
+     * 名称
+     */
     private String name;
 
-    /** 状态 */
+    /**
+     * 状态
+     */
     private String status;
 
-    /** 图片 */
+    /**
+     * 图片
+     */
     private String image;
 
-    /** 描述 */
+    /**
+     * 描述
+     */
     private String describe;
 
-    /** 点赞量 */
+    /**
+     * 点赞量
+     */
     private Long likesNumber;
 
-    /** 评论数 */
+    /**
+     * 评论数
+     */
     private Long commentsNumber;
 
-    /** 浏览量 */
+    /**
+     * 浏览量
+     */
     private Long looksNumber;
 
-    /** 排序 */
+    /**
+     * 排序
+     */
     private Long sortNum;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 
-    /** 创建人 */
+    /**
+     * 创建人
+     */
     private Long userId;
+    /**
+     * 创建人名称
+     */
+    private String userName;
 
-    /** 创建时间 */
+    /**
+     * 创建时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date createTime;
 
-    /** 更新人 */
+    /**
+     * 更新人
+     */
     private String updateBy;
 
-    /** 更新时间 */
+    /**
+     * 更新时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date updateTime;
 
 
-     /**
+    /**
      * 对象转封装类
      *
      * @param scenicInfo ScenicInfo实体对象

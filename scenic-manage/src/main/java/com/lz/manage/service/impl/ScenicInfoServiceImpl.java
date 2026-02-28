@@ -1,26 +1,22 @@
 package com.lz.manage.service.impl;
 
-import java.util.*;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-import javax.validation.Validator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.lz.common.utils.StringUtils;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.lz.common.utils.DateUtils;
-import javax.annotation.Resource;
-import org.springframework.stereotype.Service;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lz.common.core.domain.entity.SysUser;
+import com.lz.common.utils.DateUtils;
+import com.lz.common.utils.SecurityUtils;
+import com.lz.common.utils.StringUtils;
 import com.lz.manage.mapper.ScenicInfoMapper;
 import com.lz.manage.model.domain.ScenicInfo;
-import com.lz.manage.service.IScenicInfoService;
 import com.lz.manage.model.dto.scenicInfo.ScenicInfoQuery;
 import com.lz.manage.model.vo.scenicInfo.ScenicInfoVo;
+import com.lz.manage.service.IScenicInfoService;
+import com.lz.system.service.ISysUserService;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 景区信息Service业务层处理
@@ -29,13 +25,16 @@ import com.lz.manage.model.vo.scenicInfo.ScenicInfoVo;
  * @date 2026-02-28
  */
 @Service
-public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicInfo> implements IScenicInfoService
-{
+public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicInfo> implements IScenicInfoService {
 
     @Resource
     private ScenicInfoMapper scenicInfoMapper;
 
+    @Resource
+    private ISysUserService sysUserService;
+
     //region mybatis代码
+
     /**
      * 查询景区信息
      *
@@ -43,8 +42,7 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
      * @return 景区信息
      */
     @Override
-    public ScenicInfo selectScenicInfoById(Long id)
-    {
+    public ScenicInfo selectScenicInfoById(Long id) {
         return scenicInfoMapper.selectScenicInfoById(id);
     }
 
@@ -55,9 +53,15 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
      * @return 景区信息
      */
     @Override
-    public List<ScenicInfo> selectScenicInfoList(ScenicInfo scenicInfo)
-    {
-        return scenicInfoMapper.selectScenicInfoList(scenicInfo);
+    public List<ScenicInfo> selectScenicInfoList(ScenicInfo scenicInfo) {
+        List<ScenicInfo> scenicInfos = scenicInfoMapper.selectScenicInfoList(scenicInfo);
+        for (ScenicInfo info : scenicInfos) {
+            SysUser sysUser = sysUserService.selectUserById(info.getUserId());
+            if (StringUtils.isNotNull(sysUser)) {
+                info.setUserName(sysUser.getUserName());
+            }
+        }
+        return scenicInfos;
     }
 
     /**
@@ -67,9 +71,13 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
      * @return 结果
      */
     @Override
-    public int insertScenicInfo(ScenicInfo scenicInfo)
-    {
-        scenicInfo.setCreateTime(DateUtils.getNowDate());
+    public int insertScenicInfo(ScenicInfo scenicInfo) {
+        scenicInfo.setUserId(SecurityUtils.getUserId());
+        Date nowDate = DateUtils.getNowDate();
+        scenicInfo.setCreateTime(nowDate);
+        scenicInfo.setLikesNumber(0L);
+        scenicInfo.setLooksNumber(0L);
+        scenicInfo.setCommentsNumber(0L);
         return scenicInfoMapper.insertScenicInfo(scenicInfo);
     }
 
@@ -80,8 +88,8 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
      * @return 结果
      */
     @Override
-    public int updateScenicInfo(ScenicInfo scenicInfo)
-    {
+    public int updateScenicInfo(ScenicInfo scenicInfo) {
+        scenicInfo.setUpdateBy(SecurityUtils.getUsername());
         scenicInfo.setUpdateTime(DateUtils.getNowDate());
         return scenicInfoMapper.updateScenicInfo(scenicInfo);
     }
@@ -93,8 +101,7 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
      * @return 结果
      */
     @Override
-    public int deleteScenicInfoByIds(Long[] ids)
-    {
+    public int deleteScenicInfoByIds(Long[] ids) {
         return scenicInfoMapper.deleteScenicInfoByIds(ids);
     }
 
@@ -105,13 +112,13 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
      * @return 结果
      */
     @Override
-    public int deleteScenicInfoById(Long id)
-    {
+    public int deleteScenicInfoById(Long id) {
         return scenicInfoMapper.deleteScenicInfoById(id);
     }
+
     //endregion
     @Override
-    public QueryWrapper<ScenicInfo> getQueryWrapper(ScenicInfoQuery scenicInfoQuery){
+    public QueryWrapper<ScenicInfo> getQueryWrapper(ScenicInfoQuery scenicInfoQuery) {
         QueryWrapper<ScenicInfo> queryWrapper = new QueryWrapper<>();
         //如果不使用params可以删除
         Map<String, Object> params = scenicInfoQuery.getParams();
@@ -119,19 +126,19 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
             params = new HashMap<>();
         }
         Long id = scenicInfoQuery.getId();
-        queryWrapper.eq( StringUtils.isNotNull(id),"id",id);
+        queryWrapper.eq(StringUtils.isNotNull(id), "id", id);
 
         String name = scenicInfoQuery.getName();
-        queryWrapper.like(StringUtils.isNotEmpty(name) ,"name",name);
+        queryWrapper.like(StringUtils.isNotEmpty(name), "name", name);
 
         String status = scenicInfoQuery.getStatus();
-        queryWrapper.eq(StringUtils.isNotEmpty(status) ,"status",status);
+        queryWrapper.eq(StringUtils.isNotEmpty(status), "status", status);
 
         String describe = scenicInfoQuery.getDescribe();
-        queryWrapper.eq(StringUtils.isNotEmpty(describe) ,"describe",describe);
+        queryWrapper.eq(StringUtils.isNotEmpty(describe), "describe", describe);
 
         Date createTime = scenicInfoQuery.getCreateTime();
-        queryWrapper.between(StringUtils.isNotNull(params.get("beginCreateTime"))&&StringUtils.isNotNull(params.get("endCreateTime")),"create_time",params.get("beginCreateTime"),params.get("endCreateTime"));
+        queryWrapper.between(StringUtils.isNotNull(params.get("beginCreateTime")) && StringUtils.isNotNull(params.get("endCreateTime")), "create_time", params.get("beginCreateTime"), params.get("endCreateTime"));
 
         return queryWrapper;
     }
