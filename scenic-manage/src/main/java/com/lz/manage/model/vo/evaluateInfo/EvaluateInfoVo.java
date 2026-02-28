@@ -25,6 +25,7 @@ public class EvaluateInfoVo implements Serializable
 
     /** 景区 */
     private Long scenicId;
+    private String scenicName;
 
     /** 状态 */
     private String status;
@@ -43,6 +44,7 @@ public class EvaluateInfoVo implements Serializable
 
     /** 创建人 */
     private Long userId;
+    private String userName;
 
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")

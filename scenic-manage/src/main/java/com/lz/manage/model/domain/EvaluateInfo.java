@@ -31,8 +31,11 @@ public class EvaluateInfo implements Serializable
     private Long id;
 
     /** 景区 */
-    @Excel(name = "景区")
+    @Excel(name = "景区", type = Excel.Type.IMPORT)
     private Long scenicId;
+    @TableField(exist = false)
+    @Excel(name = "景区", type = Excel.Type.EXPORT)
+    private String scenicName;
 
     /** 状态 */
     @Excel(name = "状态", dictType = "manage_common_status")
@@ -55,8 +58,11 @@ public class EvaluateInfo implements Serializable
     private String remark;
 
     /** 创建人 */
-    @Excel(name = "创建人")
+    @Excel(name = "创建人", type = Excel.Type.IMPORT)
     private Long userId;
+    @TableField(exist = false)
+    @Excel(name = "创建人", type = Excel.Type.EXPORT)
+    private String userName;
 
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")

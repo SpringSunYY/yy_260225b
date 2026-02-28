@@ -56,6 +56,21 @@ public class EvaluateInfoController extends BaseController
     }
 
     /**
+     * 查询评价信息列表
+     */
+    @PreAuthorize("@ss.hasPermi('manage:evaluateInfo:list')")
+    @GetMapping("/list/scenic")
+    public TableDataInfo listByScenic(EvaluateInfoQuery evaluateInfoQuery) {
+        EvaluateInfo evaluateInfo = EvaluateInfoQuery.queryToObj(evaluateInfoQuery);
+        startPage();
+        List<EvaluateInfo> list = evaluateInfoService.selectEvaluateInfoListByScenic(evaluateInfo);
+        List<EvaluateInfoVo> listVo = list.stream().map(EvaluateInfoVo::objToVo).collect(Collectors.toList());
+        TableDataInfo table = getDataTable(list);
+        table.setRows(listVo);
+        return table;
+    }
+
+    /**
      * 导出评价信息列表
      */
     @PreAuthorize("@ss.hasPermi('manage:evaluateInfo:export')")

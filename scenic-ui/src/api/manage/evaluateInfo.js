@@ -8,6 +8,13 @@ export function listEvaluateInfo(query) {
     params: query
   })
 }
+export function listEvaluateInfoByScenic(query) {
+  return request({
+    url: '/manage/evaluateInfo/list/scenic',
+    method: 'get',
+    params: query
+  })
+}
 
 // 查询评价信息详细
 export function getEvaluateInfo(id) {

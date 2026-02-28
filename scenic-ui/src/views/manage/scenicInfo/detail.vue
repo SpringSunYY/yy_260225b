@@ -52,6 +52,57 @@
               parseTime(scenicInfo.updateTime, '{y}-{m}-{d} {h}:{i}:{s}')
             }}</span>
         </div>
+
+        <!-- 评论区域 -->
+        <div class="comment-section" v-hasPermi="['manage:evaluateInfo:add']">
+          <h3 class="comment-title">评论</h3>
+
+          <!-- 评论列表 -->
+          <div class="comment-list" v-loading="commentLoading">
+            <div v-if="commentList.length === 0" class="no-comment">
+              暂无评论，快来抢沙发吧~
+            </div>
+            <div v-else class="comment-item" v-for="comment in commentList" :key="comment.id">
+              <div class="comment-header">
+                <span class="comment-user">{{ comment.userName || '匿名用户' }}</span>
+                <span class="comment-time">{{ parseTime(comment.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+              </div>
+              <div class="comment-content">{{ comment.content }}</div>
+              <div class="comment-score" v-if="comment.score">
+                <el-rate v-model="comment.score" disabled :max="5" show-score></el-rate>
+              </div>
+            </div>
+          </div>
+
+          <!-- 分页 -->
+          <pagination
+            style="padding: 10px"
+            v-show="commentTotal > 0"
+            :total="commentTotal"
+            :page.sync="commentQueryParams.pageNum"
+            :limit.sync="commentQueryParams.pageSize"
+            @pagination="getCommentList"
+          />
+
+          <!-- 新增评论 -->
+          <div class="comment-form" v-hasPermi="['manage:evaluateInfo:add']">
+            <h4>发表评论</h4>
+            <el-form ref="commentForm" :model="commentForm" :rules="commentRules" label-width="80px">
+              <el-form-item label="标题" prop="title">
+                <el-input v-model="commentForm.title" placeholder="请输入标题"/>
+              </el-form-item>
+              <el-form-item label="评分" prop="score">
+                <el-rate v-model="commentForm.score" show-text></el-rate>
+              </el-form-item>
+              <el-form-item label="内容" prop="content">
+                <el-input v-model="commentForm.content" type="textarea" :rows="3" placeholder="请输入评论内容"/>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="submitComment" :loading="commentSubmitLoading">提交评论</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -63,9 +114,12 @@
 <script>
 import {getScenicInfoDetail} from "@/api/manage/scenicInfo";
 import {addLikesInfo} from "@/api/manage/likesInfo";
+import {addEvaluateInfo, listEvaluateInfoByScenic} from "@/api/manage/evaluateInfo";
+import Pagination from "@/components/Pagination";
 
 export default {
   name: "ScenicDetail",
+  components: {Pagination},
   data() {
     return {
       // 详情数据
@@ -73,7 +127,34 @@ export default {
       // 加载状态
       loading: false,
       // 是否点赞
-      isLike: false
+      isLike: false,
+      // 评论相关数据
+      commentLoading: false,
+      commentSubmitLoading: false,
+      commentList: [],
+      commentTotal: 0,
+      commentQueryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        scenicId: null
+      },
+      commentForm: {
+        scenicId: null,
+        title: '',
+        score: 5,
+        content: ''
+      },
+      commentRules: {
+        title: [
+          {required: true, message: "标题不能为空", trigger: "blur"}
+        ],
+        score: [
+          {required: true, message: "评分不能为空", trigger: "change"}
+        ],
+        content: [
+          {required: true, message: "评论内容不能为空", trigger: "blur"}
+        ]
+      }
     };
   },
   created() {
@@ -92,6 +173,10 @@ export default {
         this.scenicInfo = response.data;
         // 后台返回的 isLike 字段
         this.isLike = response.data.isLike || false;
+        // 获取评论列表
+        this.commentQueryParams.scenicId = response.data.id;
+        this.commentForm.scenicId = response.data.id;
+        this.getCommentList();
         this.loading = false;
       }).catch(() => {
         this.loading = false;
@@ -125,6 +210,49 @@ export default {
       const seconds = String(date.getSeconds()).padStart(2, '0');
 
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    },
+    /** 获取评论列表 */
+    getCommentList() {
+      this.commentLoading = true;
+      listEvaluateInfoByScenic(this.commentQueryParams).then(response => {
+        this.commentList = response.rows || [];
+        this.commentTotal = response.total || 0;
+        this.commentLoading = false;
+      }).catch(() => {
+        this.commentLoading = false;
+      });
+    },
+    /** 提交评论 */
+    submitComment() {
+      this.$refs["commentForm"].validate(valid => {
+        if (valid) {
+          this.commentSubmitLoading = true;
+          // 设置默认状态为正常（0）
+          const data = {
+            ...this.commentForm,
+            status: '0'
+          };
+          addEvaluateInfo(data).then(response => {
+            this.$modal.msgSuccess("评论成功");
+            this.commentSubmitLoading = false;
+            // 重置表单
+            this.commentForm = {
+              scenicId: this.scenicInfo.id,
+              title: '',
+              score: 5,
+              content: ''
+            };
+            // 刷新评论列表
+            this.getCommentList();
+            // 更新评论数
+            if (this.scenicInfo) {
+              this.scenicInfo.commentsNumber = (Number(this.scenicInfo.commentsNumber) || 0) + 1;
+            }
+          }).catch(() => {
+            this.commentSubmitLoading = false;
+          });
+        }
+      });
     }
   }
 };
@@ -215,6 +343,87 @@ export default {
   border-top: 1px solid #ebeef5;
   color: #909399;
   font-size: 13px;
+}
+
+.comment-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #ebeef5;
+
+  .comment-title {
+    margin: 0 0 20px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #303133;
+  }
+}
+
+.comment-list {
+  margin-bottom: 20px;
+  min-height: 100px;
+
+  .no-comment {
+    text-align: center;
+    color: #909399;
+    padding: 40px 0;
+    font-size: 14px;
+  }
+
+  .comment-item {
+    padding: 15px;
+    border-bottom: 1px solid #ebeef5;
+    margin-bottom: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+
+      .comment-user {
+        font-weight: 600;
+        color: #303133;
+      }
+
+      .comment-time {
+        color: #909399;
+        font-size: 12px;
+      }
+    }
+
+    .comment-content {
+      color: #606266;
+      line-height: 1.6;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .comment-score {
+      ::v-deep .el-rate {
+        height: auto;
+      }
+    }
+  }
+}
+
+.comment-form {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+
+  h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+  }
+
+  ::v-deep .el-rate {
+    height: 32px;
+    line-height: 32px;
+  }
 }
 
 // 响应式
