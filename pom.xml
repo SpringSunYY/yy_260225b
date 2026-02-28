@@ -233,6 +233,11 @@
                 <artifactId>scenic-common</artifactId>
                 <version>${scenic.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.lz</groupId>
+                <artifactId>scenic-manage</artifactId>
+                <version>${scenic.version}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>
@@ -244,6 +249,7 @@
         <module>scenic-quartz</module>
         <module>scenic-generator</module>
         <module>scenic-common</module>
+        <module>scenic-manage</module>
     </modules>
     <packaging>pom</packaging>
 
