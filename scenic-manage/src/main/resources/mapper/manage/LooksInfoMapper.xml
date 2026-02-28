@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lz.manage.mapper.LooksInfoMapper">
-    
+
     <resultMap type="LooksInfo" id="LooksInfoResult">
         <result property="id"    column="id"    />
         <result property="scenicId"    column="scenic_id"    />
@@ -20,13 +20,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectLooksInfoList" parameterType="LooksInfo" resultMap="LooksInfoResult">
         <include refid="selectLooksInfoVo"/>
-        <where>  
-            <if test="id != null "> and id = #{id}</if>
-            <if test="scenicId != null "> and scenic_id = #{scenicId}</if>
-            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and DATE_FORMAT(create_time, '%Y-%m-%d') between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        <where>
+            <if test="id != null ">and id = #{id}</if>
+            <if test="scenicId != null ">and scenic_id = #{scenicId}</if>
+            <if test="userId != null">and user_id = #{userId}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''">
+                and DATE_FORMAT(create_time, '%Y-%m-%d') between #{params.beginCreateTime} and #{params.endCreateTime}
+            </if>
         </where>
     </select>
-    
+
     <select id="selectLooksInfoById" parameterType="Long" resultMap="LooksInfoResult">
         <include refid="selectLooksInfoVo"/>
         where id = #{id}
@@ -70,7 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteLooksInfoByIds" parameterType="String">
-        delete from tb_looks_info where id in 
+        delete from tb_looks_info where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

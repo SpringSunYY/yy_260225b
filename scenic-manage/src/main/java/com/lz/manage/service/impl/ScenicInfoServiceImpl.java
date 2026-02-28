@@ -6,9 +6,14 @@ import com.lz.common.core.domain.entity.SysUser;
 import com.lz.common.utils.DateUtils;
 import com.lz.common.utils.SecurityUtils;
 import com.lz.common.utils.StringUtils;
+import com.lz.manage.mapper.LikesInfoMapper;
+import com.lz.manage.mapper.LooksInfoMapper;
 import com.lz.manage.mapper.ScenicInfoMapper;
+import com.lz.manage.model.domain.LikesInfo;
+import com.lz.manage.model.domain.LooksInfo;
 import com.lz.manage.model.domain.ScenicInfo;
 import com.lz.manage.model.dto.scenicInfo.ScenicInfoQuery;
+import com.lz.manage.model.vo.scenicInfo.ScenicInfoDetailVo;
 import com.lz.manage.model.vo.scenicInfo.ScenicInfoVo;
 import com.lz.manage.service.IScenicInfoService;
 import com.lz.system.service.ISysUserService;
@@ -33,6 +38,12 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
     @Resource
     private ISysUserService sysUserService;
 
+    @Resource
+    private LikesInfoMapper likesInfoMapper;
+
+    @Resource
+    private LooksInfoMapper looksInfoMapper;
+
     //region mybatis代码
 
     /**
@@ -44,6 +55,42 @@ public class ScenicInfoServiceImpl extends ServiceImpl<ScenicInfoMapper, ScenicI
     @Override
     public ScenicInfo selectScenicInfoById(Long id) {
         return scenicInfoMapper.selectScenicInfoById(id);
+    }
+
+    @Override
+    public ScenicInfoDetailVo selectScenicInfoDetailById(Long id) {
+        ScenicInfo scenicInfo = scenicInfoMapper.selectScenicInfoById(id);
+        ScenicInfoDetailVo scenicInfoDetailVo = ScenicInfoDetailVo.objToVo(scenicInfo);
+        LikesInfo likesInfo = new LikesInfo();
+        likesInfo.setScenicId(id);
+        Long userId = SecurityUtils.getUserId();
+        likesInfo.setUserId(userId);
+        //判断是否已点赞
+        List<LikesInfo> likesInfos = likesInfoMapper.selectLikesInfoList(likesInfo);
+        if (StringUtils.isNotEmpty(likesInfos)) {
+            scenicInfoDetailVo.setIsLike(true);
+        } else {
+            scenicInfoDetailVo.setIsLike(false);
+        }
+        //判断是否有浏览记录
+        LooksInfo looksInfo = new LooksInfo();
+        looksInfo.setScenicId(id);
+        looksInfo.setUserId(userId);
+        List<LooksInfo> looksInfos = looksInfoMapper.selectLooksInfoList(looksInfo);
+        Date nowDate = DateUtils.getNowDate();
+        //如果有就更新浏览的更新时间，没有插入
+        if (StringUtils.isNotEmpty(looksInfos)) {
+            LooksInfo looks = looksInfos.get(0);
+            looks.setUpdateTime(nowDate);
+            looksInfoMapper.updateLooksInfo(looks);
+        } else {
+            looksInfo.setCreateTime(nowDate);
+            looksInfo.setUpdateTime(nowDate);
+            looksInfoMapper.insertLooksInfo(looksInfo);
+            scenicInfo.setLooksNumber(scenicInfo.getLooksNumber() + 1);
+            scenicInfoMapper.updateScenicInfo(scenicInfo);
+        }
+        return scenicInfoDetailVo;
     }
 
     /**

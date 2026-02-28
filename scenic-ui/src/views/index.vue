@@ -121,10 +121,14 @@ export default {
         this.loadMore();
       }
     },
-    /** 查看详情 */
+    /** 查看详情 - 新窗口打开 */
     handleDetail(row) {
-      console.log('查看详情:', row);
-      // TODO: 跳转详情页或打开详情弹窗
+      // 使用路由 resolve 获取 URL，然后在新标签页打开
+      const route = this.$router.resolve({
+        name: 'ScenicDetail',
+        query: { id: row.id }
+      });
+      window.open(route.href, '_blank');
     },
     /** 时间格式化 */
     parseTime(time, pattern) {

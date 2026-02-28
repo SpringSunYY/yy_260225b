@@ -3,6 +3,8 @@ package com.lz.manage.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
+
+import com.lz.manage.model.vo.scenicInfo.ScenicInfoDetailVo;
 import org.springframework.security.access.prepost.PreAuthorize;
 import javax.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,6 +80,13 @@ public class ScenicInfoController extends BaseController
     {
         ScenicInfo scenicInfo = scenicInfoService.selectScenicInfoById(id);
         return success(ScenicInfoVo.objToVo(scenicInfo));
+    }
+
+    @PreAuthorize("@ss.hasPermi('manage:scenicInfo:query')")
+    @GetMapping(value = "/detail/{id}")
+    public AjaxResult getInfoDetail(@PathVariable("id") Long id) {
+        ScenicInfoDetailVo scenicInfo = scenicInfoService.selectScenicInfoDetailById(id);
+        return success(scenicInfo);
     }
 
     /**

@@ -17,6 +17,13 @@ export function getScenicInfo(id) {
   })
 }
 
+export function getScenicInfoDetail(id) {
+  return request({
+    url: '/manage/scenicInfo/detail/' + id,
+    method: 'get'
+  })
+}
+
 // 新增景区信息
 export function addScenicInfo(data) {
   return request({

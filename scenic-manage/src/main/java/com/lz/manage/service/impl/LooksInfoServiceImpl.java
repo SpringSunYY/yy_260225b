@@ -1,26 +1,24 @@
 package com.lz.manage.service.impl;
 
-import java.util.*;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-import javax.validation.Validator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.lz.common.utils.StringUtils;
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.lz.common.utils.DateUtils;
-import javax.annotation.Resource;
-import org.springframework.stereotype.Service;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lz.common.core.domain.entity.SysUser;
+import com.lz.common.utils.DateUtils;
+import com.lz.common.utils.SecurityUtils;
+import com.lz.common.utils.StringUtils;
 import com.lz.manage.mapper.LooksInfoMapper;
+import com.lz.manage.mapper.ScenicInfoMapper;
 import com.lz.manage.model.domain.LooksInfo;
-import com.lz.manage.service.ILooksInfoService;
+import com.lz.manage.model.domain.ScenicInfo;
 import com.lz.manage.model.dto.looksInfo.LooksInfoQuery;
 import com.lz.manage.model.vo.looksInfo.LooksInfoVo;
+import com.lz.manage.service.ILooksInfoService;
+import com.lz.system.service.ISysUserService;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 浏览信息Service业务层处理
@@ -29,13 +27,19 @@ import com.lz.manage.model.vo.looksInfo.LooksInfoVo;
  * @date 2026-02-28
  */
 @Service
-public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo> implements ILooksInfoService
-{
+public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo> implements ILooksInfoService {
 
     @Resource
     private LooksInfoMapper looksInfoMapper;
 
+    @Resource
+    private ScenicInfoMapper scenicInfoMapper;
+
+    @Resource
+    private ISysUserService sysUserService;
+
     //region mybatis代码
+
     /**
      * 查询浏览信息
      *
@@ -43,8 +47,7 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
      * @return 浏览信息
      */
     @Override
-    public LooksInfo selectLooksInfoById(Long id)
-    {
+    public LooksInfo selectLooksInfoById(Long id) {
         return looksInfoMapper.selectLooksInfoById(id);
     }
 
@@ -55,9 +58,19 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
      * @return 浏览信息
      */
     @Override
-    public List<LooksInfo> selectLooksInfoList(LooksInfo looksInfo)
-    {
-        return looksInfoMapper.selectLooksInfoList(looksInfo);
+    public List<LooksInfo> selectLooksInfoList(LooksInfo looksInfo) {
+        List<LooksInfo> looksInfos = looksInfoMapper.selectLooksInfoList(looksInfo);
+        for (LooksInfo info : looksInfos) {
+            SysUser sysUser = sysUserService.selectUserById(info.getUserId());
+            if (StringUtils.isNotNull(sysUser)) {
+                info.setUserName(sysUser.getUserName());
+            }
+            ScenicInfo scenicInfo = scenicInfoMapper.selectScenicInfoById(info.getScenicId());
+            if (StringUtils.isNotNull(scenicInfo)) {
+                info.setScenicName(scenicInfo.getName());
+            }
+        }
+        return looksInfos;
     }
 
     /**
@@ -67,8 +80,9 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
      * @return 结果
      */
     @Override
-    public int insertLooksInfo(LooksInfo looksInfo)
-    {
+    public int insertLooksInfo(LooksInfo looksInfo) {
+        looksInfo.setUserId(SecurityUtils.getUserId());
+        looksInfo.setUpdateBy(SecurityUtils.getUsername());
         looksInfo.setCreateTime(DateUtils.getNowDate());
         return looksInfoMapper.insertLooksInfo(looksInfo);
     }
@@ -80,8 +94,8 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
      * @return 结果
      */
     @Override
-    public int updateLooksInfo(LooksInfo looksInfo)
-    {
+    public int updateLooksInfo(LooksInfo looksInfo) {
+        looksInfo.setUpdateBy(SecurityUtils.getUsername());
         looksInfo.setUpdateTime(DateUtils.getNowDate());
         return looksInfoMapper.updateLooksInfo(looksInfo);
     }
@@ -93,8 +107,7 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
      * @return 结果
      */
     @Override
-    public int deleteLooksInfoByIds(Long[] ids)
-    {
+    public int deleteLooksInfoByIds(Long[] ids) {
         return looksInfoMapper.deleteLooksInfoByIds(ids);
     }
 
@@ -105,13 +118,13 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
      * @return 结果
      */
     @Override
-    public int deleteLooksInfoById(Long id)
-    {
+    public int deleteLooksInfoById(Long id) {
         return looksInfoMapper.deleteLooksInfoById(id);
     }
+
     //endregion
     @Override
-    public QueryWrapper<LooksInfo> getQueryWrapper(LooksInfoQuery looksInfoQuery){
+    public QueryWrapper<LooksInfo> getQueryWrapper(LooksInfoQuery looksInfoQuery) {
         QueryWrapper<LooksInfo> queryWrapper = new QueryWrapper<>();
         //如果不使用params可以删除
         Map<String, Object> params = looksInfoQuery.getParams();
@@ -119,13 +132,13 @@ public class LooksInfoServiceImpl extends ServiceImpl<LooksInfoMapper, LooksInfo
             params = new HashMap<>();
         }
         Long id = looksInfoQuery.getId();
-        queryWrapper.eq( StringUtils.isNotNull(id),"id",id);
+        queryWrapper.eq(StringUtils.isNotNull(id), "id", id);
 
         Long scenicId = looksInfoQuery.getScenicId();
-        queryWrapper.eq( StringUtils.isNotNull(scenicId),"scenic_id",scenicId);
+        queryWrapper.eq(StringUtils.isNotNull(scenicId), "scenic_id", scenicId);
 
         Date createTime = looksInfoQuery.getCreateTime();
-        queryWrapper.between(StringUtils.isNotNull(params.get("beginCreateTime"))&&StringUtils.isNotNull(params.get("endCreateTime")),"create_time",params.get("beginCreateTime"),params.get("endCreateTime"));
+        queryWrapper.between(StringUtils.isNotNull(params.get("beginCreateTime")) && StringUtils.isNotNull(params.get("endCreateTime")), "create_time", params.get("beginCreateTime"), params.get("endCreateTime"));
 
         return queryWrapper;
     }
